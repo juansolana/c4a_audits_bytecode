@@ -166,7 +166,7 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
         
         let contents: Vec<RepoContent> = serde_json::from_str(&body).unwrap();
         let repo_results = process_contents(&contents, &repo_client, &owner, &repo).await?;
-        println!("REPO RESULT: {:#?}", repo_results);
+        // println!("REPO RESULT: {:#?}", repo_results);
         if !repo_results.is_empty() {
             // If we found any contracts in this repo, add it to the overall results.
             all_results.push((repo.to_string(), repo_results));
