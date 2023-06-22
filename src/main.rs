@@ -8,6 +8,7 @@ use regex::Regex;
 use std::future::Future;
 use async_recursion::async_recursion;
 use std::collections::HashMap;
+use std::path::Path;
 use tokio::process::Command; 
 use tokio::fs::remove_dir_all;
 use std::io::{Error as IoError, ErrorKind};
@@ -141,15 +142,24 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
             continue;
         }
         
+        // If repo already exists, delete it to clone latest
+        let repo_path_str = format!("./repos/{}", &repo);
+        let repo_path = Path::new(&repo_path_str);
+        if repo_path.exists() {
+            remove_dir_all(&repo_path_str);
+            let result = remove_dir_all(&repo_path_str).await;
+            if result.is_err() {
+                eprintln!("Failed to delete repository at {}: {}", repo_path_str, result.unwrap_err());
+            }
+        }
         // Clone repo locally and compile contracts
-        let repo_path = format!("./repos/{}", &repo);
-        let repo_fetch = match Repository::clone(&repo_fetch_url, &repo_path) {
+        let repo_fetch = match Repository::clone(&repo_fetch_url, &repo_path_str) {
             Ok(repo_fetch) => {
                 repo_fetch;
                 println!("Repo cloned. Attempting compilation.");
 
                 let output = Command::new("forge")
-                    .current_dir(&repo_path)
+                    .current_dir(&repo_path_str)
                     .arg("compile")
                     .output()
                     .await?;  // executes the command                                    
@@ -174,9 +184,9 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
         println!("ALL RESULT: {:#?}", all_results);
 
         // Delete the cloned repo
-        let result = remove_dir_all(&repo_path).await;
+        let result = remove_dir_all(&repo_path_str).await;
         if result.is_err() {
-            eprintln!("Failed to delete repository at {}: {}", repo_path, result.unwrap_err());
+            eprintln!("Failed to delete repository at {}: {}", repo_path_str, result.unwrap_err());
         }
     }
     Ok(all_results)
