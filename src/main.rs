@@ -86,6 +86,7 @@ async fn get_contests(contest_status: &str) -> Result<Vec<String>, Box<dyn std::
     
     // Navigate to the Code4rena contests page and wait for it to load
     tab.navigate_to("https://code4rena.com/contests")?;
+    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
     tab.wait_for_element("div.contests-page")?;
     
     // Find all the contest divs that are have a class with contest_status value
@@ -136,7 +137,7 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
             .await?;                            
 
         if response.status().as_u16() > 400 {
-            println!("Repo not accessible");
+            println!("Repo not accessible. {:#?}", response.status().as_u16());
             continue;
         }
         
@@ -191,32 +192,19 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
             Some("file") => {
                 if let Some(name) = &content.name {
                     if name.ends_with(".sol") && !name.ends_with(".t.sol") && !name.ends_with(".s.sol") && !name.contains("Test") {
-                        // this is a Solidity contract
-                        // TODO: no longer using  `contract_body` so can remove this up to `filename`'s if
-                        if let Some(url) = &content.download_url {
-                            // Get the contract source code
-                            let response = repo_client.get(url)
-                                // .header(header::AUTHORIZATION, format!("token {}", github_token))
-                                .header("User-Agent", "Rust")
-                                .send()
-                                .await?;
-                            let contract_body = response.text().await?;
-                            if let Some(pragma_version) = get_pragma_version(&contract_body) {
-                                if let Some(filename) = content.name.as_ref() {
-                                    match get_bytecode(&filename, &repo).await {
-                                        Ok(bytecode) => {
-                                            println!("Bytecode exists for: {}", filename);
-                                            repo_results.push((filename.clone(), bytecode));
-                                        }
-                                        Err(e) => {
-                                            eprintln!("Error - Bytecode not found for: {}", filename);
-                                            continue;
-                                        }
-                                    }
-                                } else {
+                        if let Some(filename) = content.name.as_ref() {
+                            match get_bytecode(&filename, &repo).await {
+                                Ok(bytecode) => {
+                                    println!("Bytecode exists for: {}", filename);
+                                    repo_results.push((filename.clone(), bytecode));
+                                }
+                                Err(e) => {
+                                    eprintln!("Error - Bytecode not found for: {}", filename);
                                     continue;
                                 }
-                            }                            
+                            }
+                        } else {
+                            continue;
                         }
                     }
                 }
