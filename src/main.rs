@@ -51,7 +51,7 @@ type ResponseContent = Option<Vec<RepoContent>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {   
-    dotenv().ok();
+    // dotenv().ok();
 
     let mut active_contests = get_contests("active").await?;
     let mut upcoming_contests = get_contests("upcoming").await?;
@@ -115,7 +115,7 @@ async fn get_contests(contest_status: &str) -> Result<Vec<String>, Box<dyn std::
 
 /// Returns a vector containing the contest's repo name and a vector that contains the contracts in the repo along with their bytecode.
 async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String, String)>)>, Box<dyn std::error::Error>> {
-    let github_token = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN must be set");
+    // let github_token = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN must be set");
 
     let mut all_results: Vec<(String, Vec<(String, String)>)> = Vec::new();
 
@@ -130,7 +130,7 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
         println!("\nContest Repo: {:#?}", contents_url);
         
         let response = repo_client.get(&contents_url)
-            .header("Authorization", format!("token {}", github_token))
+            // .header("Authorization", format!("token {}", github_token))
             .header(header::USER_AGENT, "Rust")
             .send()
             .await?;                            
@@ -183,7 +183,7 @@ async fn process(target_repos: &Vec<String>) -> Result<Vec<(String, Vec<(String,
 
 #[async_recursion]
 async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Client, owner: &str, repo: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
-    let github_token = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN must be set");
+    // let github_token = env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN must be set");
 
     let mut repo_results: Vec<(String, String)> = Vec::new();
     for content in contents {
@@ -196,7 +196,7 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
                         if let Some(url) = &content.download_url {
                             // Get the contract source code
                             let response = repo_client.get(url)
-                                .header(header::AUTHORIZATION, format!("token {}", github_token))
+                                // .header(header::AUTHORIZATION, format!("token {}", github_token))
                                 .header("User-Agent", "Rust")
                                 .send()
                                 .await?;
@@ -226,7 +226,7 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
                 if let Some(path) = &content.path {
                     let dir_url = format!("https://api.github.com/repos/{}/{}/contents/{}", owner, repo, path);
                     let response = repo_client.get(&dir_url)
-                        .header(header::AUTHORIZATION, format!("token {}", github_token))
+                        // .header(header::AUTHORIZATION, format!("token {}", github_token))
                         .header("User-Agent", "Rust")
                         .send()
                         .await?;
