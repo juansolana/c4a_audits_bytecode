@@ -227,7 +227,7 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
             Some("dir") => {
                 // this is a directory, need to fetch its contents and process them
                 if let Some(path) = &content.path {
-                    if !path.contains("test") && !path.contains("Test") {
+                    if !path.contains("test") && !path.contains("Test") && !path.contains("example") {
                         let dir_url = format!("https://api.github.com/repos/{}/{}/contents/{}", owner, repo, path);
                         let response = repo_client.get(&dir_url)
                             // .header(header::AUTHORIZATION, format!("token {}", github_token))
