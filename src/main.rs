@@ -205,7 +205,12 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
                         if let Some(filename) = content.name.as_ref() {
                             match get_bytecode(&filename, &repo).await {
                                 Ok(bytecode) => {
-                                    println!("Bytecode exists for: {}", filename);
+                                    let first_12_chars: String = bytecode
+                                        .chars()
+                                        .filter(|c| !c.is_control())
+                                        .take(12)
+                                        .collect();
+                                    println!("Bytecode for {}: {:#?}", filename, first_12_chars);
                                     repo_results.push((filename.clone(), bytecode));
                                 }
                                 Err(e) => {
@@ -222,15 +227,17 @@ async fn process_contents(contents: &Vec<RepoContent>, repo_client: &reqwest::Cl
             Some("dir") => {
                 // this is a directory, need to fetch its contents and process them
                 if let Some(path) = &content.path {
-                    let dir_url = format!("https://api.github.com/repos/{}/{}/contents/{}", owner, repo, path);
-                    let response = repo_client.get(&dir_url)
-                        // .header(header::AUTHORIZATION, format!("token {}", github_token))
-                        .header("User-Agent", "Rust")
-                        .send()
-                        .await?;
-                    let dir_contents: Vec<RepoContent> = response.json().await?;
-                    let mut dir_results = process_contents(&dir_contents, repo_client, owner, repo).await?;
-                    repo_results.append(&mut dir_results);
+                    if !path.contains("test") && !path.contains("Test") {
+                        let dir_url = format!("https://api.github.com/repos/{}/{}/contents/{}", owner, repo, path);
+                        let response = repo_client.get(&dir_url)
+                            // .header(header::AUTHORIZATION, format!("token {}", github_token))
+                            .header("User-Agent", "Rust")
+                            .send()
+                            .await?;
+                        let dir_contents: Vec<RepoContent> = response.json().await?;
+                        let mut dir_results = process_contents(&dir_contents, repo_client, owner, repo).await?;
+                        repo_results.append(&mut dir_results);
+                    }
                 }
             },
             _ => {
